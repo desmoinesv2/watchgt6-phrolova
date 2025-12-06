@@ -5,6 +5,8 @@ interface IconProps {
   className?: string;
   id?: string;
   style?: React.CSSProperties;
+  zone?: number; // For heart rate
+  condition?: string; // For weather
 }
 
 // Redesigned to closely match the organic, chaotic, "anime-style" Red Spider Lily (Lycoris radiata)
@@ -63,42 +65,51 @@ export const SpiderLilyIcon = ({ className, id, style }: IconProps) => (
   </svg>
 );
 
-// New Component: Outer Bezel/Decoration Ring for Export with Spider Lily Elements
+// Completely Redesigned Artistic/Gothic Bezel
 export const WatchBezelIcon = ({ className, id, style }: IconProps) => (
   <svg id={id} style={style} viewBox="0 0 466 466" className={className} fill="none">
     <defs>
-       <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="4" result="blur" />
+       <filter id="glow-red-bezel" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
           <feComposite in="SourceGraphic" in2="blur" operator="over" />
        </filter>
     </defs>
     
-    {/* Base Ring - Slightly smaller than 466 to avoid clipping */}
-    <circle cx="233" cy="233" r="220" stroke="#880015" strokeWidth="2" strokeOpacity="0.8" />
-    <circle cx="233" cy="233" r="215" stroke="#000000" strokeWidth="8" strokeOpacity="0.3" />
-    <circle cx="233" cy="233" r="228" stroke="#880015" strokeWidth="1" strokeOpacity="0.3" strokeDasharray="2 4" />
+    {/* Base Structure: 8-fold symmetry */}
+    <g transform="translate(233, 233)">
+      {/* Outer Thorn Circle */}
+      <circle r="225" stroke="#880015" strokeWidth="1" opacity="0.5" />
+      <circle r="215" stroke="#000000" strokeWidth="10" opacity="0.4" />
+      
+      {/* Repeated Gothic Pattern */}
+      {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+        <g key={i} transform={`rotate(${angle})`}>
+           {/* Thorns/Spikes */}
+           <path d="M0 -225 L 5 -215 L 0 -210 L -5 -215 Z" fill="#880015" />
+           
+           {/* Intertwining Petals */}
+           <path 
+             d="M0 -225 C 15 -210, 20 -190, 0 -180 C -20 -190, -15 -210, 0 -225" 
+             stroke="#880015" 
+             strokeWidth="1.5" 
+             fill="none" 
+             opacity="0.8"
+           />
+           
+           {/* Inner Filigree */}
+           <path 
+             d="M0 -180 Q 10 -170 0 -160 Q -10 -170 0 -180" 
+             stroke="#d4af37" 
+             strokeWidth="1" 
+             fill="#1a0505"
+           />
+        </g>
+      ))}
 
-    {/* Spider Lily Petal Motifs at Cardinal Directions */}
-    {[0, 90, 180, 270].map((rotation, i) => (
-      <g key={i} transform={`rotate(${rotation} 233 233)`}>
-        {/* Decorative Curve - Stylized Petal */}
-        <path 
-          d="M233 13 Q 248 30 233 50 Q 218 30 233 13" 
-          stroke="#880015" 
-          fill="#1a0505" 
-          strokeWidth="1.5"
-        />
-        {/* Stamen Lines */}
-        <path d="M233 13 Q 255 25 260 40" stroke="#d4af37" strokeWidth="1" opacity="0.6" fill="none" />
-        <path d="M233 13 Q 211 25 206 40" stroke="#d4af37" strokeWidth="1" opacity="0.6" fill="none" />
-        
-        {/* Small Dot */}
-        <circle cx="233" cy="45" r="2" fill="#d4af37" />
-      </g>
-    ))}
-
-    {/* Inner dashed ring */}
-    <circle cx="233" cy="233" r="200" stroke="#d4af37" strokeWidth="0.5" strokeOpacity="0.4" strokeDasharray="4 8" />
+      {/* Connection Arcs */}
+      <circle r="190" stroke="#880015" strokeWidth="0.5" strokeDasharray="10 5" opacity="0.6" />
+      <circle r="230" stroke="#880015" strokeWidth="0.5" opacity="0.3" />
+    </g>
   </svg>
 );
 
@@ -161,11 +172,57 @@ export const BatteryIcon = ({ className, id, style }: IconProps) => (
   </svg>
 );
 
-export const HeartRateIcon = ({ className, id, style }: IconProps) => (
-  <svg id={id} style={style} viewBox="0 0 24 24" className={className} fill="currentColor">
-    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-  </svg>
-);
+// 5-Zone Heart Rate Icon
+export const HeartRateIcon = ({ className, id, style, zone = 1 }: IconProps) => {
+  const color = '#880015'; // Enforce Red
+  
+  return (
+    <svg id={id} style={style} viewBox="0 0 24 24" className={className} fill="currentColor">
+      {/* Zone 1: Resting (Outline) */}
+      {zone <= 1 && (
+         <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke={color} strokeWidth="2" />
+      )}
+      
+      {/* Zone 2: Warm Up (Outline + Dot) */}
+      {zone === 2 && (
+         <g>
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke={color} strokeWidth="2" />
+            <circle cx="12" cy="10" r="3" fill={color} />
+         </g>
+      )}
+
+      {/* Zone 3: Fat Burn (Half Fill / Wave) */}
+      {zone === 3 && (
+         <g>
+            <defs>
+               <clipPath id="clip-half">
+                  <rect x="0" y="10" width="24" height="14" />
+               </clipPath>
+            </defs>
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="none" stroke={color} strokeWidth="2" />
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill={color} clipPath="url(#clip-half)" />
+         </g>
+      )}
+
+      {/* Zone 4: Cardio (Full Fill + EKG Line) */}
+      {zone === 4 && (
+         <g>
+           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill={color} />
+           <path d="M4 11 L 8 11 L 10 6 L 14 16 L 16 11 L 20 11" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+         </g>
+      )}
+
+      {/* Zone 5: Peak (Burst / Spiked) */}
+      {zone === 5 && (
+         <g>
+           <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill={color} />
+           <path d="M12 2 L 13 6 M 22 8 L 18 9 M 2 8 L 6 9" stroke={color} strokeWidth="2" strokeLinecap="round" />
+           <path d="M12 11 L 12 15 M 10 13 L 14 13" stroke="white" strokeWidth="2" />
+         </g>
+      )}
+    </svg>
+  );
+};
 
 export const StepsIcon = ({ className, id, style }: IconProps) => (
   <svg id={id} style={style} viewBox="0 0 24 24" className={className} fill="currentColor">
@@ -173,10 +230,47 @@ export const StepsIcon = ({ className, id, style }: IconProps) => (
   </svg>
 );
 
-export const WeatherIcon = ({ className, id, style }: IconProps) => (
+// Expanded Weather Icon to support multiple conditions
+export const WeatherIcon = ({ className, id, style, condition = 'Sunny' }: IconProps) => (
   <svg id={id} style={style} viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
-    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-    <circle cx="12" cy="12" r="4" />
+    {/* Sunny */}
+    {(condition === 'Sunny' || !condition) && (
+      <g>
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+        <circle cx="12" cy="12" r="4" />
+      </g>
+    )}
+
+    {/* Cloudy */}
+    {condition === 'Cloudy' && (
+      <g>
+        <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+      </g>
+    )}
+
+    {/* Rainy */}
+    {condition === 'Rainy' && (
+      <g>
+         <path d="M19 13a5 5 0 0 0-10-1.5 8 8 0 1 0-4.5 14h1.1" />
+         <path d="M12 15l-2 5M16 15l-2 5" strokeLinecap="round" />
+      </g>
+    )}
+
+    {/* Snow */}
+    {condition === 'Snow' && (
+      <g>
+         <path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25" />
+         <path d="M8 16h.01M8 20h.01M12 18h.01M12 22h.01M16 16h.01M16 20h.01" strokeWidth="2" strokeLinecap="round"/>
+      </g>
+    )}
+
+    {/* Thunder */}
+    {condition === 'Thunder' && (
+      <g>
+         <path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9" />
+         <path d="M13 11l-4 6h6l-4 6" />
+      </g>
+    )}
   </svg>
 );
 

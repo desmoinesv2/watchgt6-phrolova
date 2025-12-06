@@ -25,6 +25,15 @@ const SlidingNumber = ({ value, className }: { value: string | number; className
   </div>
 );
 
+// Helper to calculate heart rate zone
+const getHeartRateZone = (bpm: number): number => {
+  if (bpm < 100) return 1; // Resting
+  if (bpm < 120) return 2; // Warm up
+  if (bpm < 140) return 3; // Fat burn
+  if (bpm < 160) return 4; // Cardio
+  return 5; // Peak
+};
+
 const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
   const { isAOD, date, batteryLevel, steps, weatherTemp, notificationCount, heartRate } = state;
   const { bezelScale, iconScale } = theme.scales;
@@ -33,6 +42,9 @@ const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
   const hours = date.getHours();
   const minutes = date.getMinutes();
   const seconds = date.getSeconds();
+  
+  // Heart Rate Zone
+  const heartRateZone = getHeartRateZone(heartRate);
   
   // Date Formatting
   const dayName = useMemo(() => date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase(), [date]);
@@ -177,7 +189,8 @@ const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
                       icon={null}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <HeartRateIcon className={`w-4 h-4 text-phrolova-red mb-0.5 animate-pulse`} />
+                      {/* Pass calculated zone to icon */}
+                      <HeartRateIcon className={`w-4 h-4 text-phrolova-red mb-0.5 animate-pulse`} zone={heartRateZone} />
                       <span className={`text-xs ${TIME_FONT} font-bold ${TEXT_COLOR} leading-none`}>{heartRate}</span>
                   </div>
               </div>

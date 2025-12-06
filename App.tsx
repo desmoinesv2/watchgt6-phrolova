@@ -41,10 +41,11 @@ const App: React.FC = () => {
            ? Math.floor(Math.random() * 5) 
            : prev.notificationCount;
 
+        // Random heart rate to show off zone changes
         return {
             ...prev,
             date: newDate,
-            heartRate: prev.isAOD ? 70 : 70 + Math.floor(Math.random() * 10 - 5),
+            heartRate: prev.isAOD ? 70 : 70 + Math.floor(Math.random() * 80 - 10), // Fluctuate more for demo
             notificationCount: newNotifs,
             steps: prev.steps + (Math.random() > 0.8 ? 1 : 0)
         };
@@ -72,6 +73,66 @@ const App: React.FC = () => {
   };
 
   // --- ASSET EXPORT LOGIC ---
+  
+  // NEW Helper to robustly export any image source (Blob, URL, etc.)
+  const generateImageAsset = (imageSource: string): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "Anonymous"; // Try to handle CORS if external
+      img.src = imageSource;
+      
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(null);
+        
+        ctx.drawImage(img, 0, 0);
+        // Export as JPEG with high quality
+        canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.95);
+      };
+      
+      img.onerror = (e) => {
+        console.warn("Canvas export failed for image, falling back to fetch", e);
+        // Fallback to fetch
+        fetch(imageSource)
+            .then(res => res.blob())
+            .then(blob => resolve(blob))
+            .catch((err) => {
+                console.error("Fetch fallback also failed", err);
+                resolve(null);
+            });
+      };
+    });
+  };
+
+  const generateTextAsset = (
+    text: string, 
+    fontSize: string, 
+    color: string, 
+    width: number,
+    height: number,
+    fontFamily: string = 'Cinzel'
+  ): Promise<Blob | null> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(null);
+
+      document.fonts.load(`${fontSize} ${fontFamily}`).then(() => {
+        ctx.clearRect(0, 0, width, height);
+        ctx.font = `bold ${fontSize} ${fontFamily}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = color;
+        ctx.fillText(text, width / 2, height / 2 + (height * 0.05)); 
+        canvas.toBlob(resolve, 'image/png');
+      });
+    });
+  };
 
   const generateDigitAsset = (
     num: number, 
@@ -217,13 +278,26 @@ const App: React.FC = () => {
         if(blob) assets.push({ name: `sec_${i}.png`, url: URL.createObjectURL(blob), type: 'Second' });
     }
 
-    // 4. Generate Icons
+    // 4. Generate Months (1-12)
+    const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    for (let i = 0; i < 12; i++) {
+        const blob = await generateTextAsset(monthNames[i], "1.2rem", "#880015", 80, 40); // Phrolova Red Month
+        if(blob) assets.push({ name: `month_${i+1}.png`, url: URL.createObjectURL(blob), type: 'Month' });
+    }
+
+    // 5. Generate Weekdays (Sun-Sat)
+    const weekDays = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    for (let i = 0; i < 7; i++) {
+        const blob = await generateTextAsset(weekDays[i], "1.2rem", "#888888", 80, 40); // Grey Weekday
+        if(blob) assets.push({ name: `weekday_${i}.png`, url: URL.createObjectURL(blob), type: 'Weekday' });
+    }
+
+    // 6. Generate Standard Icons
     const iconMap = [
         { id: "export-spider-lily", name: "aod_spider_lily.png" },
-        { id: "export-bezel", name: "background_decoration.png" }, // Renamed for export clarity
-        { id: "export-weather", name: "icon_weather.png" },
+        { id: "export-bezel", name: "background_decoration.png" },
+        // removed weather here to use specific loop below
         { id: "export-steps", name: "icon_steps.png" },
-        { id: "export-heart", name: "icon_heart.png" },
         { id: "export-message", name: "icon_message.png" },
         { id: "export-battery", name: "icon_battery.png" },
     ];
@@ -231,6 +305,19 @@ const App: React.FC = () => {
     for (const icon of iconMap) {
         const blob = await generateSvgAsset(icon.id);
         if(blob) assets.push({ name: icon.name, url: URL.createObjectURL(blob), type: 'Icon' });
+    }
+    
+    // 7. Generate Weather Icons (All Conditions)
+    const conditions = ['Sunny', 'Cloudy', 'Rainy', 'Snow', 'Thunder'];
+    for (const cond of conditions) {
+        const blob = await generateSvgAsset(`export-weather-${cond}`);
+        if(blob) assets.push({ name: `icon_weather_${cond.toLowerCase()}.png`, url: URL.createObjectURL(blob), type: 'Weather' });
+    }
+
+    // 8. Generate 5 Zone Heart Rate Icons
+    for (let i = 1; i <= 5; i++) {
+         const blob = await generateSvgAsset(`export-heart-${i}`);
+         if(blob) assets.push({ name: `icon_heart_${i}.png`, url: URL.createObjectURL(blob), type: `Heart Rate Z${i}` });
     }
     
     return assets;
@@ -258,22 +345,21 @@ const App: React.FC = () => {
             folder?.file(asset.name, blob);
         }
 
-        // 5. Try to export Background Image if it's a blob
-        if (bgImage.startsWith('blob:') || bgImage.startsWith('data:')) {
-            try {
-                const response = await fetch(bgImage);
-                const blob = await response.blob();
-                folder?.file("background_source.jpg", blob);
-            } catch (e) {
-                console.warn("Could not export background image");
+        // Export Background Image using Canvas method
+        try {
+            const bgBlob = await generateImageAsset(bgImage);
+            if (bgBlob) {
+                folder?.file("background_source.jpg", bgBlob);
+            } else {
+                console.warn("Background blob generation returned null");
+                try {
+                     const response = await fetch(bgImage);
+                     const blob = await response.blob();
+                     folder?.file("background_source.jpg", blob);
+                } catch(err) { console.error("Fallback fetch failed", err); }
             }
-        } else {
-             // For static assets imported via path
-             try {
-                const response = await fetch(bgImage);
-                const blob = await response.blob();
-                folder?.file("background_source.jpg", blob);
-             } catch(e) { console.warn("Static bg export fail", e); }
+        } catch (e) {
+             console.error("Background export failed", e);
         }
 
         // Generate ZIP
@@ -307,28 +393,62 @@ const App: React.FC = () => {
          <div className="w-[512px] h-[512px]">
              <SpiderLilyIcon id="export-spider-lily" className="w-full h-full text-[#880015]" />
          </div>
-         {/* Decoration Bezel - FIXED: Ensure container is large enough and applies user scale */}
+         
+         {/* Decoration Bezel - Applies user scale DIRECTLY to the Icon */}
          <div className="w-[466px] h-[466px] flex items-center justify-center">
-             <div className="w-full h-full" style={{ transform: `scale(${bezelScale})` }}>
-                <WatchBezelIcon id="export-bezel" className="w-full h-full" />
-             </div>
+             <WatchBezelIcon 
+                id="export-bezel" 
+                className="w-full h-full" 
+                style={{ transform: `scale(${bezelScale})`, transformOrigin: 'center' }}
+             />
          </div>
-         {/* Icons */}
+         
+         {/* Weather Icons (All Variants) */}
+         {['Sunny', 'Cloudy', 'Rainy', 'Snow', 'Thunder'].map(cond => (
+            <div key={cond} className="w-[100px] h-[100px] text-[#e5e7eb]">
+                <WeatherIcon 
+                   id={`export-weather-${cond}`} 
+                   condition={cond}
+                   className="w-full h-full"
+                   style={{ transform: `scale(${iconScale})`, transformOrigin: 'center' }} 
+                />
+            </div>
+         ))}
+
+         {/* Standard Icons - Applies icon scale DIRECTLY to the Icon */}
          <div className="w-[100px] h-[100px] text-[#e5e7eb]">
-             <WeatherIcon id="export-weather" className="w-full h-full" />
-         </div>
-         <div className="w-[100px] h-[100px] text-[#e5e7eb]">
-             <StepsIcon id="export-steps" className="w-full h-full" />
-         </div>
-         <div className="w-[100px] h-[100px] text-[#880015]">
-             <HeartRateIcon id="export-heart" className="w-full h-full" />
+             <StepsIcon 
+                id="export-steps" 
+                className="w-full h-full"
+                style={{ transform: `scale(${iconScale})`, transformOrigin: 'center' }} 
+             />
          </div>
          <div className="w-[100px] h-[100px] text-[#ffffff]">
-             <MessageIcon id="export-message" className="w-full h-full" />
+             <MessageIcon 
+                id="export-message" 
+                className="w-full h-full" 
+                style={{ transform: `scale(${iconScale})`, transformOrigin: 'center' }}
+             />
          </div>
          <div className="w-[100px] h-[100px] text-[#880015]">
-             <BatteryIcon id="export-battery" className="w-full h-full" />
+             <BatteryIcon 
+                id="export-battery" 
+                className="w-full h-full" 
+                style={{ transform: `scale(${iconScale})`, transformOrigin: 'center' }}
+             />
          </div>
+         
+         {/* Heart Rate Zones 1-5 - Applies icon scale DIRECTLY to the Icon */}
+         {[1, 2, 3, 4, 5].map(zone => (
+            <div key={zone} className="w-[100px] h-[100px] text-[#880015]">
+                <HeartRateIcon 
+                    id={`export-heart-${zone}`} 
+                    zone={zone} 
+                    className="w-full h-full" 
+                    style={{ transform: `scale(${iconScale})`, transformOrigin: 'center' }}
+                />
+            </div>
+         ))}
       </div>
 
       <div className="flex flex-col lg:flex-row items-center justify-center gap-12 w-full max-w-7xl">
