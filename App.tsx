@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import WatchFace from './components/WatchFace';
 import { WatchState, ThemeConfig } from './types';
 import { generateCharacterQuote } from './services/geminiService';
 import { DEFAULT_BG_IMAGE, DEFAULT_QUOTE } from './constants';
-import { SpiderLilyIcon, WeatherIcon, StepsIcon, HeartRateIcon, MessageIcon, BatteryIcon } from './components/Icons';
+import { SpiderLilyIcon, WeatherIcon, StepsIcon, HeartRateIcon, MessageIcon, BatteryIcon, WatchBezelIcon } from './components/Icons';
 import JSZip from 'jszip';
 import saveAs from 'file-saver';
 
@@ -15,6 +16,10 @@ const App: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [generatedAssets, setGeneratedAssets] = useState<{name: string, url: string, type: string}[]>([]);
   
+  // New Scaling State
+  const [bezelScale, setBezelScale] = useState(0.95);
+  const [iconScale, setIconScale] = useState(1.0);
+
   // Watch State Simulation
   const [watchState, setWatchState] = useState<WatchState>({
     isAOD: false,
@@ -112,21 +117,38 @@ const App: React.FC = () => {
       const originalSvg = document.getElementById(elementId);
       if (!originalSvg) return resolve(null);
 
+      // Get accurate dimensions from the DOM before cloning
+      const rect = originalSvg.getBoundingClientRect();
+      const width = rect.width || 512;
+      const height = rect.height || 512;
+
       // Clone the node to manipulate styles without affecting the DOM
       const clonedSvg = originalSvg.cloneNode(true) as SVGElement;
       
+      // CRITICAL FIX: Explicitly set width and height attributes on the cloned SVG.
+      clonedSvg.setAttribute('width', width.toString());
+      clonedSvg.setAttribute('height', height.toString());
+
       // IMPORTANT: Recursive function to copy computed styles to inline styles
-      // This ensures Tailwind classes (text-red-500) are baked into the SVG for export
       const copyComputedStyles = (source: Element, target: Element) => {
         const computed = window.getComputedStyle(source);
-        const stylesToCopy = ['fill', 'stroke', 'stroke-width', 'opacity', 'color', 'display', 'visibility', 'stroke-linecap', 'stroke-linejoin'];
+        const stylesToCopy = ['fill', 'stroke', 'stroke-width', 'opacity', 'color', 'display', 'visibility', 'stroke-linecap', 'stroke-linejoin', 'stroke-dasharray', 'transform', 'transform-origin'];
         
         if (target instanceof HTMLElement || target instanceof SVGElement) {
             stylesToCopy.forEach(prop => {
-                (target as any).style[prop] = computed.getPropertyValue(prop);
+                const val = computed.getPropertyValue(prop);
+                if (val && val !== 'none') {
+                    (target as any).style[prop] = val;
+                }
+                
+                if (prop === 'fill' && val !== 'none' && val !== 'transparent') {
+                    target.setAttribute('fill', val);
+                }
+                if (prop === 'stroke' && val !== 'none' && val !== 'transparent') {
+                    target.setAttribute('stroke', val);
+                }
             });
             
-            // Handle currentColor manually if needed
             if (computed.fill === 'none') target.setAttribute('fill', 'none');
         }
 
@@ -152,16 +174,16 @@ const App: React.FC = () => {
       
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const rect = originalSvg.getBoundingClientRect();
-        // Scale up for better quality
+        // Scale up for better quality (High DPI)
         const scale = 2;
-        canvas.width = (rect.width || 512) * scale;
-        canvas.height = (rect.height || 512) * scale;
+        canvas.width = width * scale;
+        canvas.height = height * scale;
         
         const ctx = canvas.getContext('2d');
         if (ctx) {
             ctx.scale(scale, scale);
-            ctx.drawImage(img, 0, 0);
+            // Draw using explicit dimensions to match the canvas
+            ctx.drawImage(img, 0, 0, width, height);
             canvas.toBlob(resolve, 'image/png');
         } else {
             resolve(null);
@@ -198,6 +220,7 @@ const App: React.FC = () => {
     // 4. Generate Icons
     const iconMap = [
         { id: "export-spider-lily", name: "aod_spider_lily.png" },
+        { id: "export-bezel", name: "background_decoration.png" }, // Renamed for export clarity
         { id: "export-weather", name: "icon_weather.png" },
         { id: "export-steps", name: "icon_steps.png" },
         { id: "export-heart", name: "icon_heart.png" },
@@ -236,14 +259,21 @@ const App: React.FC = () => {
         }
 
         // 5. Try to export Background Image if it's a blob
-        if (bgImage.startsWith('blob:')) {
+        if (bgImage.startsWith('blob:') || bgImage.startsWith('data:')) {
             try {
                 const response = await fetch(bgImage);
                 const blob = await response.blob();
-                folder?.file("background.jpg", blob);
+                folder?.file("background_source.jpg", blob);
             } catch (e) {
                 console.warn("Could not export background image");
             }
+        } else {
+             // For static assets imported via path
+             try {
+                const response = await fetch(bgImage);
+                const blob = await response.blob();
+                folder?.file("background_source.jpg", blob);
+             } catch(e) { console.warn("Static bg export fail", e); }
         }
 
         // Generate ZIP
@@ -263,17 +293,25 @@ const App: React.FC = () => {
     secondaryColor: '#000000',
     accentColor: '#d4af37',
     bgImage: bgImage,
-    quote: currentQuote
+    quote: currentQuote,
+    scales: { bezelScale, iconScale }
   };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center p-8 gap-12 text-gray-200">
       
       {/* Hidden Staging Area for Asset Export - Renders components invisibly to capture them */}
-      <div className="fixed top-0 left-0 -z-50 opacity-0 pointer-events-none flex flex-col bg-white/0" style={{ visibility: 'hidden' }}>
+      {/* Using left -9999px ensures layout is calculated but not visible */}
+      <div className="fixed top-0 flex flex-col bg-white/0" style={{ left: '-9999px', position: 'absolute' }}>
          {/* AOD Flower */}
          <div className="w-[512px] h-[512px]">
              <SpiderLilyIcon id="export-spider-lily" className="w-full h-full text-[#880015]" />
+         </div>
+         {/* Decoration Bezel - FIXED: Ensure container is large enough and applies user scale */}
+         <div className="w-[466px] h-[466px] flex items-center justify-center">
+             <div className="w-full h-full" style={{ transform: `scale(${bezelScale})` }}>
+                <WatchBezelIcon id="export-bezel" className="w-full h-full" />
+             </div>
          </div>
          {/* Icons */}
          <div className="w-[100px] h-[100px] text-[#e5e7eb]">
@@ -337,8 +375,47 @@ const App: React.FC = () => {
                 </div>
             </div>
 
+            {/* Scale Adjustments */}
+            <div className="space-y-6 pt-4 border-t border-white/5">
+                <h2 className="text-lg font-bold text-gray-300">Scale Adjustments</h2>
+                
+                {/* Bezel Scale */}
+                <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-gray-400 uppercase tracking-widest">
+                        <span>Decoration Size</span>
+                        <span>{Math.round(bezelScale * 100)}%</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        min="0.5" 
+                        max="1.1" 
+                        step="0.01" 
+                        value={bezelScale} 
+                        onChange={(e) => setBezelScale(parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-phrolova-red hover:accent-red-500 transition-colors"
+                    />
+                </div>
+
+                {/* Icon Scale */}
+                <div className="space-y-2">
+                    <div className="flex justify-between text-xs text-gray-400 uppercase tracking-widest">
+                        <span>Icon Size</span>
+                        <span>{Math.round(iconScale * 100)}%</span>
+                    </div>
+                    <input 
+                        type="range" 
+                        min="0.5" 
+                        max="1.5" 
+                        step="0.05" 
+                        value={iconScale} 
+                        onChange={(e) => setIconScale(parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-phrolova-gold hover:accent-yellow-500 transition-colors"
+                    />
+                </div>
+            </div>
+
             {/* Customization */}
-            <div className="space-y-4">
+            <div className="space-y-4 pt-4 border-t border-white/5">
                 <h2 className="text-lg font-bold text-gray-300">Customization</h2>
                 
                 {/* Image Upload */}

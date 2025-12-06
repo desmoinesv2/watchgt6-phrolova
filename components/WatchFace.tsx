@@ -7,7 +7,8 @@ import {
   WeatherIcon,
   MessageIcon,
   HeartRateIcon,
-  StepsIcon
+  StepsIcon,
+  WatchBezelIcon
 } from './Icons';
 
 interface WatchFaceProps {
@@ -26,6 +27,7 @@ const SlidingNumber = ({ value, className }: { value: string | number; className
 
 const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
   const { isAOD, date, batteryLevel, steps, weatherTemp, notificationCount, heartRate } = state;
+  const { bezelScale, iconScale } = theme.scales;
 
   // Time Values
   const hours = date.getHours();
@@ -106,15 +108,18 @@ const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
       </div>
 
       {/* 2. Outer Decorative Ring (Phrolova Magic Circle Theme) */}
-      <div className="absolute inset-2 rounded-full border border-phrolova-red/40 z-10"></div>
-      <div className="absolute inset-[14px] rounded-full border border-phrolova-gold/20 border-dashed z-10 opacity-70"></div>
+      <div 
+        className="absolute inset-0 z-10 pointer-events-none flex items-center justify-center"
+        style={{ transform: `scale(${bezelScale})` }}
+      >
+         <WatchBezelIcon className="w-full h-full" />
+      </div>
       
       {/* 3. Main Digital Time Layout */}
       <div className="absolute inset-0 z-20 pointer-events-none">
           
           {/* Big Hour - Centered - Unified Artistic Font */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-            {/* Hour doesn't need slide animation every second, static render is better for stability, or we can animate on hour change */}
             <span className={`text-[9rem] leading-none ${TIME_FONT} font-normal text-white tracking-tight drop-shadow-2xl`} style={{ textShadow: '0 4px 30px rgba(0,0,0,0.9)' }}>
                 {hours.toString().padStart(2, '0')}
             </span>
@@ -141,11 +146,11 @@ const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
           </div>
       </div>
 
-      {/* 4. Complications Layout (Scattered Circles) */}
-      <div className="absolute inset-0 z-20 pointer-events-none">
+      {/* 4. Complications Layout (Scattered Circles) - Scaled via iconScale */}
+      <div className="absolute inset-0 z-20 pointer-events-none" >
           
           {/* Top Center - Steps */}
-          <div className="absolute top-[14%] left-1/2 -translate-x-1/2 flex flex-col items-center">
+          <div className="absolute top-[14%] left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ transform: `scale(${iconScale})` }}>
               <div className="relative w-[70px] h-[70px] rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg">
                   <CircularProgress 
                       percentage={Math.min(steps / 100, 100)} 
@@ -162,7 +167,7 @@ const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
           </div>
 
           {/* Bottom Center - Heart Rate / BPM */}
-          <div className="absolute bottom-[18%] left-1/2 -translate-x-1/2 flex flex-col items-center">
+          <div className="absolute bottom-[18%] left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ transform: `scale(${iconScale})` }}>
                <div className="relative w-[70px] h-[70px] rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-lg">
                   <CircularProgress 
                       percentage={Math.min((heartRate / 200) * 100, 100)} 
@@ -179,7 +184,7 @@ const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
           </div>
 
           {/* Left Center - Date */}
-          <div className="absolute left-[12%] top-1/2 -translate-y-1/2 flex flex-col items-center">
+          <div className="absolute left-[12%] top-1/2 -translate-y-1/2 flex flex-col items-center" style={{ transform: `scale(${iconScale})` }}>
               <div className="w-[60px] h-[60px] rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex flex-col items-center justify-center text-white shadow-lg ring-1 ring-white/5">
                   <span className={`text-[9px] ${TIME_FONT} text-phrolova-red font-bold uppercase tracking-wider`}>{monthName}</span>
                   <span className={`text-xl ${TIME_FONT} font-bold leading-none ${TEXT_COLOR}`}>{dayNumber}</span>
@@ -188,7 +193,7 @@ const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
           </div>
 
           {/* Top Left (Diagonal) - Weather */}
-          <div className="absolute top-[22%] left-[22%] flex flex-col items-center">
+          <div className="absolute top-[22%] left-[22%] flex flex-col items-center" style={{ transform: `scale(${iconScale})` }}>
               <div className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
                    <WeatherIcon className={`w-5 h-5 ${TEXT_COLOR}`} />
               </div>
@@ -196,7 +201,7 @@ const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
           </div>
 
           {/* Bottom Left (Diagonal) - Battery */}
-           <div className="absolute bottom-[22%] left-[22%] flex flex-col items-center">
+           <div className="absolute bottom-[22%] left-[22%] flex flex-col items-center" style={{ transform: `scale(${iconScale})` }}>
                 <div className="w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center relative">
                     <CircularProgress 
                       percentage={batteryLevel} 
@@ -213,7 +218,7 @@ const WatchFace: React.FC<WatchFaceProps> = ({ state, theme }) => {
 
           {/* Message Notification (Bottom Center) */}
           {notificationCount > 0 && (
-            <div className="absolute bottom-[5%] left-1/2 -translate-x-1/2 animate-bounce duration-[2000ms] z-30">
+            <div className="absolute bottom-[5%] left-1/2 -translate-x-1/2 animate-bounce duration-[2000ms] z-30" style={{ transform: `translateX(-50%) scale(${iconScale})` }}>
                 <div className="flex items-center gap-1 bg-phrolova-red/90 backdrop-blur-md rounded-full px-3 py-1 border border-white/20 shadow-glow">
                     <MessageIcon className="w-4 h-4 text-white" />
                     <span className={`text-xs font-bold ${TIME_FONT} text-white`}>{notificationCount}</span>

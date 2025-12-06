@@ -10,25 +10,18 @@ interface IconProps {
 // Redesigned to closely match the organic, chaotic, "anime-style" Red Spider Lily (Lycoris radiata)
 export const SpiderLilyIcon = ({ className, id, style }: IconProps) => (
   <svg id={id} style={style} viewBox="0 0 512 512" className={className} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-    {/* 
-       Concept: Chaotic, organic flower head. 
-       Center point is approx (256, 250).
-       Petals curl backwards. Stamens project outwards.
-    */}
-
     {/* STEM: Curved, organic */}
     <path 
       d="M256 512 Q 260 400 256 320" 
       strokeWidth="10" 
       className="text-phrolova-red opacity-90"
-      style={{ stroke: '#880015' }} // Inline style fallback for export
+      style={{ stroke: '#880015' }} 
     />
 
     <g transform="translate(256, 260) scale(1.1)">
       
       {/* Central Flower Mass - A mix of curling petals */}
       <g strokeWidth="8" className="text-phrolova-red" fill="rgba(136, 0, 21, 0.2)" style={{ stroke: '#880015', fill: 'rgba(136, 0, 21, 0.2)' }}>
-        {/* Core Petals - Curling backwards in a cluster */}
         <path d="M0 0 C -30 -20 -50 10 -60 40" /> 
         <path d="M0 0 C 30 -20 50 10 60 40" />
         <path d="M0 0 C -20 -40 -60 -60 -80 -40" />
@@ -43,24 +36,19 @@ export const SpiderLilyIcon = ({ className, id, style }: IconProps) => (
         <path d="M0 -10 Q 30 -50 70 -30" strokeWidth="6" opacity="0.8"/>
       </g>
 
-      {/* Stamens - The signature look of Spider Lily. Long, thin, projecting out like spider legs */}
+      {/* Stamens */}
       <g strokeWidth="2.5" className="text-phrolova-red" opacity="0.9" style={{ stroke: '#880015' }}>
-        {/* Left Side Stamens */}
         <path d="M0 0 C -40 -80 -100 -100 -140 -120" />
         <path d="M5 -5 C -30 -100 -80 -150 -120 -180" />
         <path d="M-5 -5 C -60 -60 -120 -80 -160 -80" />
-        
-        {/* Right Side Stamens */}
         <path d="M0 0 C 40 -80 100 -100 140 -120" />
         <path d="M-5 -5 C 30 -100 80 -150 120 -180" />
         <path d="M5 -5 C 60 -60 120 -80 160 -80" />
-        
-        {/* Top/Center Stamens */}
         <path d="M0 0 C -20 -100 0 -180 -20 -220" />
         <path d="M0 0 C 20 -100 0 -180 20 -220" />
       </g>
       
-      {/* Anthers (Tips of stamens) */}
+      {/* Anthers */}
       <g fill="currentColor" stroke="none" className="text-phrolova-gold opacity-80" style={{ fill: '#d4af37' }}>
          <circle cx="-140" cy="-120" r="4" />
          <circle cx="-120" cy="-180" r="4" />
@@ -72,6 +60,45 @@ export const SpiderLilyIcon = ({ className, id, style }: IconProps) => (
          <circle cx="20" cy="-220" r="4" />
       </g>
     </g>
+  </svg>
+);
+
+// New Component: Outer Bezel/Decoration Ring for Export with Spider Lily Elements
+export const WatchBezelIcon = ({ className, id, style }: IconProps) => (
+  <svg id={id} style={style} viewBox="0 0 466 466" className={className} fill="none">
+    <defs>
+       <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+       </filter>
+    </defs>
+    
+    {/* Base Ring - Slightly smaller than 466 to avoid clipping */}
+    <circle cx="233" cy="233" r="220" stroke="#880015" strokeWidth="2" strokeOpacity="0.8" />
+    <circle cx="233" cy="233" r="215" stroke="#000000" strokeWidth="8" strokeOpacity="0.3" />
+    <circle cx="233" cy="233" r="228" stroke="#880015" strokeWidth="1" strokeOpacity="0.3" strokeDasharray="2 4" />
+
+    {/* Spider Lily Petal Motifs at Cardinal Directions */}
+    {[0, 90, 180, 270].map((rotation, i) => (
+      <g key={i} transform={`rotate(${rotation} 233 233)`}>
+        {/* Decorative Curve - Stylized Petal */}
+        <path 
+          d="M233 13 Q 248 30 233 50 Q 218 30 233 13" 
+          stroke="#880015" 
+          fill="#1a0505" 
+          strokeWidth="1.5"
+        />
+        {/* Stamen Lines */}
+        <path d="M233 13 Q 255 25 260 40" stroke="#d4af37" strokeWidth="1" opacity="0.6" fill="none" />
+        <path d="M233 13 Q 211 25 206 40" stroke="#d4af37" strokeWidth="1" opacity="0.6" fill="none" />
+        
+        {/* Small Dot */}
+        <circle cx="233" cy="45" r="2" fill="#d4af37" />
+      </g>
+    ))}
+
+    {/* Inner dashed ring */}
+    <circle cx="233" cy="233" r="200" stroke="#d4af37" strokeWidth="0.5" strokeOpacity="0.4" strokeDasharray="4 8" />
   </svg>
 );
 
@@ -95,7 +122,6 @@ export const CircularProgress = ({
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       <svg className="transform -rotate-90 w-full h-full">
-        {/* Track */}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -105,7 +131,6 @@ export const CircularProgress = ({
           fill="transparent"
           className="text-white/10"
         />
-        {/* Indicator */}
         <circle
           cx={size / 2}
           cy={size / 2}

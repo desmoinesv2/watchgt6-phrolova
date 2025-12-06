@@ -9,12 +9,18 @@ export interface WatchState {
   notificationCount: number;
 }
 
+export interface ScaleConfig {
+  bezelScale: number;
+  iconScale: number;
+}
+
 export interface ThemeConfig {
   primaryColor: string;
   secondaryColor: string;
   accentColor: string;
   bgImage: string;
   quote: string;
+  scales: ScaleConfig;
 }
 
 export enum WatchMode {
